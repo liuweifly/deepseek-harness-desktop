@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4D6BFE"/>
+      <stop offset="1" stop-color="#3350E8"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <!-- whale body -->
+  <path d="M 262 560 C 262 400 396 330 530 330 C 700 330 790 430 790 566 C 790 690 690 772 530 772 C 380 772 262 690 262 560 Z" fill="#FFFFFF"/>
+  <!-- tail fin -->
+  <path d="M 748 512 C 826 490 888 462 938 424 C 916 500 906 556 914 612 C 866 606 812 596 748 600 Z" fill="#FFFFFF"/>
+  <!-- spout -->
+  <path d="M 470 330 C 452 270 400 240 356 210" stroke="#FFFFFF" stroke-width="44" stroke-linecap="round" fill="none"/>
+  <!-- water drops -->
+  <circle cx="318" cy="166" r="26" fill="#FFFFFF"/>
+  <circle cx="394" cy="146" r="18" fill="#FFFFFF" opacity="0.85"/>
+  <!-- eye -->
+  <circle cx="618" cy="482" r="15" fill="#3350E8"/>
+</svg>

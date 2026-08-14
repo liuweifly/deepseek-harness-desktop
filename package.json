@@ -1,0 +1,48 @@
+{
+  "name": "deepseek-desktop",
+  "version": "1.0.0",
+  "description": "DeepSeek Harness 桌面版 — 把 dsh web 封装成原生 macOS App",
+  "main": "main.js",
+  "author": "liuweifly",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --mac dir && node scripts/postpack.js",
+    "dist": "npm run pack"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh": "^0.1.0-rc.6"
+  },
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "ai.deepseek.desktop",
+    "productName": "DeepSeek",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "node_modules/**"
+    ],
+    "asar": false,
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns",
+      "identity": null,
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ]
+    }
+  }
+}
