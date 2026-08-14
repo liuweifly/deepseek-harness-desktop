@@ -4,7 +4,7 @@
 // 启动时自动拉起 dsh Harness 服务(若 3080 已有实例则直接复用),
 // 并在原生窗口中打开 Harness Web UI。
 
-const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, nativeTheme } = require('electron');
 const { spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
@@ -126,14 +126,80 @@ async function ensureServer() {
 
 // ---------------------------------------------------------------- window
 
+// 「统一标题栏」模式(macOS):隐藏原生标题栏,红绿灯悬浮在侧边栏顶部,
+// 网页自身的主头部直接成为 App 头部 —— 即 Claude Code App 的样式。
+// 通过注入的拖拽区拖动窗口,View 菜单可随时切回传统标题栏。
+let unifiedTitleBar = true;
+
+// 注入统一标题栏辅助:侧边栏顶部让位 + 拖拽区(幂等,可安全重复执行)
+const INJECT_CHROME_JS = `(() => {
+  if (document.getElementById('ds-desktop-chrome')) return;
+  // 1) 找到左上角占满整列的侧边栏容器(约 280px 宽),顶部让位给红绿灯
+  const sidebar = [...document.querySelectorAll('body div')].find((el) => {
+    const r = el.getBoundingClientRect();
+    return r.left === 0 && r.top === 0 && r.width > 200 && r.width < 420 && r.height > 400;
+  });
+  let padded = false;
+  if (sidebar && !sidebar.dataset.dsPadded) {
+    sidebar.dataset.dsPadded = '1';
+    sidebar.style.paddingTop = '46px';
+    padded = true;
+  }
+  // 2) 拖拽区:侧边栏顶部的空位(宽 280 × 高 46);主区顶部一条 10px 细条
+  if (padded) {
+    const strip = document.createElement('div');
+    strip.id = 'ds-desktop-chrome';
+    strip.style.cssText = 'position:fixed;top:0;left:0;width:280px;height:46px;z-index:2147483647;-webkit-app-region:drag;';
+    document.documentElement.appendChild(strip);
+  }
+  const main = document.createElement('div');
+  main.id = 'ds-desktop-chrome-main';
+  main.style.cssText = 'position:fixed;top:0;left:280px;right:0;height:10px;z-index:2147483646;-webkit-app-region:drag;';
+  document.documentElement.appendChild(main);
+})()`;
+
+const REMOVE_CHROME_JS = `(() => {
+  document.getElementById('ds-desktop-chrome')?.remove();
+  document.getElementById('ds-desktop-chrome-main')?.remove();
+  [...document.querySelectorAll('[data-ds-padded]')].forEach((el) => {
+    delete el.dataset.dsPadded;
+    el.style.paddingTop = '';
+  });
+})()`;
+
+function applyUnifiedChrome(win) {
+  win.webContents.executeJavaScript(INJECT_CHROME_JS, true).catch(() => {});
+}
+
+function removeUnifiedChrome(win) {
+  win.webContents.executeJavaScript(REMOVE_CHROME_JS, true).catch(() => {});
+}
+
+function toggleTitleBar(win) {
+  unifiedTitleBar = !unifiedTitleBar;
+  win.setTitleBarStyle(unifiedTitleBar ? 'hiddenInset' : 'default');
+  if (unifiedTitleBar) {
+    if (typeof win.setTrafficLightPosition === 'function') {
+      win.setTrafficLightPosition({ x: 14, y: 16 });
+    }
+    applyUnifiedChrome(win);
+  } else {
+    removeUnifiedChrome(win);
+  }
+}
+
 function createWindow() {
+  // 窗口底色跟随系统深浅色,避免加载瞬间闪屏
+  const initialBg = nativeTheme.shouldUseDarkColors ? '#101014' : '#f9fafb';
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
     minWidth: 980,
     minHeight: 640,
     title: 'DeepSeek',
-    backgroundColor: '#0d0e13',
+    backgroundColor: initialBg,
+    titleBarStyle: 'hiddenInset', // 统一标题栏:无原生条,红绿灯悬浮
+    trafficLightPosition: { x: 14, y: 16 },
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -143,6 +209,19 @@ function createWindow() {
   });
 
   mainWindow.loadURL(APP_URL);
+
+  // 页面加载完成后注入统一标题栏辅助,并按页面实际背景色同步窗口底色
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (unifiedTitleBar) applyUnifiedChrome(mainWindow);
+    mainWindow.webContents
+      .executeJavaScript('getComputedStyle(document.body).backgroundColor', true)
+      .then((color) => {
+        if (typeof color === 'string' && color.startsWith('rgb')) {
+          mainWindow.setBackgroundColor(color);
+        }
+      })
+      .catch(() => {});
+  });
 
   // 外部链接交给系统浏览器
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -195,6 +274,15 @@ function buildMenu() {
         { role: 'reload' },
         { role: 'forceReload' },
         { role: 'toggleDevTools' },
+        { type: 'separator' },
+        {
+          label: '切换标题栏样式 (统一 ⇄ 传统)',
+          accelerator: 'CmdOrCtrl+Shift+T',
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow() || mainWindow;
+            if (win) toggleTitleBar(win);
+          },
+        },
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
