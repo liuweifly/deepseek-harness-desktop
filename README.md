@@ -2,7 +2,7 @@
 
 把 [DeepSeek Harness](https://github.com/deepseek-ai/dsh)(`dsh web`)包装成原生 macOS 桌面 App——打开即用,不用再手动开终端、记端口。
 
-> ⚠️ 非官方项目。DeepSeek 相关名称与鲸鱼标识归 DeepSeek 所有;本仓库图标为原创绘制(灵感来自鲸鱼形象),与本项目代码同以 MIT 协议开源。
+> ⚠️ 非官方项目。App 图标采用 **DeepSeek 官方鲸鱼标识**(取自 `@deepseek-ai/dsh` 官方资源),DeepSeek 相关名称、鲸鱼标识与商标均归 DeepSeek 所有;本仓库代码以 MIT 协议开源。
 
 ## 特性
 
